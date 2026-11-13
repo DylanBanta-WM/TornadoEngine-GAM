@@ -1,6 +1,7 @@
 # The GAM sidecar, started by Tornado Engine Core (see Core's docker/modules.yml).
 services:
   gam:
+    restart: unless-stopped
     build: .
     environment:
       GAM_SIDECAR_TOKEN: ${GAM_SIDECAR_TOKEN:?Add GAM_SIDECAR_TOKEN to .env (see the GAM module README)}
