@@ -18,7 +18,8 @@ class GamServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'gam');
         $this->loadRoutesFrom(__DIR__.'/../routes/gam.php');
 
-        $administration->card('gam::administration-card', order: 50);
+        $administration->tab('gam', 'GAM', order: 30);
+        $administration->card('gam::administration-card', tab: 'gam');
 
         $this->callAfterResolving(Docs::class, function (Docs $docs) {
             $docs->add('gam', __('Set up GAM'), 'gam::docs.setup', order: 20);

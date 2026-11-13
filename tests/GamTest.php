@@ -4,6 +4,7 @@ namespace TornadoEngine\Gam\Tests;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -76,7 +77,7 @@ class GamTest extends TestCase
 
     public function test_an_unreachable_sidecar_is_reported(): void
     {
-        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('down'));
+        Http::fake(fn () => throw new ConnectionException('down'));
 
         $this->expectException(GamException::class);
         app(Gam::class)->run(['info', 'domain']);
@@ -91,7 +92,7 @@ class GamTest extends TestCase
         ]);
         $admin = User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($admin)->get('/administration')->assertSee('GAM')->assertSee('oauth2service.json')->assertDontSee('Remove files');
+        $this->actingAs($admin)->get('/administration/gam')->assertSee('GAM')->assertSee('oauth2service.json')->assertDontSee('Remove files');
 
         $this->actingAs($admin)->from('/administration')->post('/administration/gam/config', [
             'oauth2_txt' => UploadedFile::fake()->createWithContent('oauth2.txt', '{"token": "x"}'),
@@ -113,7 +114,7 @@ class GamTest extends TestCase
         Http::fake(['gam:8000/config/remove' => Http::response(['configured' => false])]);
         $admin = User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($admin)->get('/administration')->assertSee('Remove files')->assertDontSee('oauth2service.json');
+        $this->actingAs($admin)->get('/administration/gam')->assertSee('Remove files')->assertDontSee('oauth2service.json');
 
         $this->actingAs($admin)->from('/administration')->post('/administration/gam/remove')->assertRedirect('/administration');
         Http::assertSent(fn (Request $request) => $request->url() === 'http://gam:8000/config/remove');

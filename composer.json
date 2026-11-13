@@ -15,13 +15,13 @@
     "extra": {
         "tornado": {
             "name": "GAM",
-            "core": ">=0.4",
+            "core": ">=0.6",
             "core-module": false,
             "provider": "TornadoEngine\\Gam\\GamServiceProvider",
             "compose": "docker/compose.yml"
         },
         "branch-alias": {
-            "dev-main": "0.3.x-dev"
+            "dev-main": "0.4.x-dev"
         }
     }
 }
