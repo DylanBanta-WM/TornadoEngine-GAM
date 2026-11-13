@@ -35,6 +35,14 @@ class Gam
     }
 
     /**
+     * Deletes GAM's credential files from the sidecar.
+     */
+    public function removeConfig(): void
+    {
+        $this->request()->post('/config/remove')->throw();
+    }
+
+    /**
      * Whether GAM can reach the Google Workspace domain.
      */
     public function check(): bool

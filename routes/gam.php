@@ -9,4 +9,5 @@ Route::middleware(['web', 'auth', 'can:administration'])
     ->group(function () {
         Route::post('/config', [GamController::class, 'config'])->name('config');
         Route::post('/check', [GamController::class, 'check'])->name('check');
+        Route::post('/remove', [GamController::class, 'remove'])->name('remove');
     });

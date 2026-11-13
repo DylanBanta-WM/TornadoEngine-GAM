@@ -76,10 +76,14 @@ class GamTest extends TestCase
 
     public function test_admins_upload_gams_files_and_check_the_connection(): void
     {
-        $this->gamPrints('');
+        Http::fake([
+            'gam:8000/status' => Http::response(['configured' => false]),
+            'gam:8000/config' => Http::response(['configured' => true]),
+            'gam:8000/run' => Http::response(['exit' => 0, 'stdout' => '', 'stderr' => '']),
+        ]);
         $admin = User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($admin)->get('/administration')->assertSee('GAM')->assertSee('oauth2service.json');
+        $this->actingAs($admin)->get('/administration')->assertSee('GAM')->assertSee('oauth2service.json')->assertDontSee('Remove files');
 
         $this->actingAs($admin)->from('/administration')->post('/administration/gam/config', [
             'oauth2_txt' => UploadedFile::fake()->createWithContent('oauth2.txt', '{"token": "x"}'),
@@ -91,7 +95,28 @@ class GamTest extends TestCase
             && $request['files']['oauth2service.json'] === '{"type": "service_account"}');
 
         $this->actingAs($admin)->from('/administration')->post('/administration/gam/check')
-            ->assertSessionHas('gam_status', 'GAM can reach your Google Workspace.');
+            ->assertSessionHas('gam_status', 'GAM can reach your Google Workspace.')
+            ->assertSessionHas('gam_ok', true);
+    }
+
+    public function test_once_uploaded_the_files_can_be_removed(): void
+    {
+        $this->gamPrints('');
+        Http::fake(['gam:8000/config/remove' => Http::response(['configured' => false])]);
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->get('/administration')->assertSee('Remove files')->assertDontSee('oauth2service.json');
+
+        $this->actingAs($admin)->from('/administration')->post('/administration/gam/remove')->assertRedirect('/administration');
+        Http::assertSent(fn (Request $request) => $request->url() === 'http://gam:8000/config/remove');
+    }
+
+    public function test_a_failed_connection_check_shows_an_error(): void
+    {
+        $this->gamPrints('', exit: 1);
+
+        $this->actingAs(User::factory()->create(['is_admin' => true]))->from('/administration')->post('/administration/gam/check')
+            ->assertSessionHasErrors('gam');
     }
 
     public function test_only_admins_can_change_gam(): void

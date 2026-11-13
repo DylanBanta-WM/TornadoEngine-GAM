@@ -7,6 +7,7 @@ in ALLOWED can run, and every request needs the shared GAM_SIDECAR_TOKEN.
   GET  /status   {"configured": bool}
   POST /run      {"args": [...]}  ->  {"exit": int, "stdout": str, "stderr": str}
   POST /config   {"files": {"oauth2.txt": "...", ...}}  saves GAM's credential files
+  POST /config/remove                                   deletes them
 """
 import hmac
 import json
@@ -95,6 +96,13 @@ class Handler(BaseHTTPRequestHandler):
             except subprocess.TimeoutExpired:
                 return self.reply(504, {'error': 'GAM took too long'})
             return self.reply(200, {'exit': done.returncode, 'stdout': done.stdout, 'stderr': done.stderr})
+
+        if self.path == '/config/remove':
+            for name in CONFIG_FILES:
+                path = os.path.join(CONFIG_DIR, name)
+                if os.path.isfile(path):
+                    os.remove(path)
+            return self.reply(200, {'configured': configured()})
 
         if self.path == '/config':
             files = body.get('files')

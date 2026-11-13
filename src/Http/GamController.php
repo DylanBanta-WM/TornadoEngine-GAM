@@ -32,6 +32,19 @@ class GamController extends Controller
         return back()->with('gam_status', __('Saved. Check the connection next.'));
     }
 
+    public function remove(Gam $gam): RedirectResponse
+    {
+        try {
+            $gam->removeConfig();
+        } catch (Throwable $e) {
+            report($e);
+
+            return back()->withErrors(['gam' => __('Couldn\'t remove the files from the GAM container.')]);
+        }
+
+        return back()->with('gam_status', __('Removed GAM\'s files.'));
+    }
+
     public function check(Gam $gam): RedirectResponse
     {
         try {
@@ -41,6 +54,8 @@ class GamController extends Controller
             $ok = false;
         }
 
-        return back()->with('gam_status', $ok ? __('GAM can reach your Google Workspace.') : __('GAM couldn\'t reach your Google Workspace. Check the files and try again.'));
+        return $ok
+            ? back()->with(['gam_status' => __('GAM can reach your Google Workspace.'), 'gam_ok' => true])
+            : back()->withErrors(['gam' => __('GAM couldn\'t reach your Google Workspace. Check the files and try again.')]);
     }
 }
