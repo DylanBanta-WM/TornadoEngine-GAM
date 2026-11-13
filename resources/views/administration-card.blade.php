@@ -7,6 +7,7 @@
         $gamReachable = false;
     }
     $box = 'rounded-md border px-4 py-3';
+    $limits = \TornadoEngine\Gam\Gam::limits();
 @endphp
 
 <x-settings-card :title="__('GAM')">
@@ -54,6 +55,31 @@
             <div class="flex justify-end">
                 <x-primary-button>{{ __('Upload') }}</x-primary-button>
             </div>
+        </form>
+    @endif
+
+    @if ($gamReachable)
+        <form method="POST" action="{{ route('gam.limits') }}" class="space-y-3 border-t border-gray-200 dark:border-gray-700 pt-4">
+            @csrf
+            <div>
+                <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ __('Limits') }}</h4>
+                <p class="text-gray-600 dark:text-gray-400">{{ __('These keep a runaway tool or job from flooding GAM and Google. Every module that uses GAM shares them.') }}</p>
+            </div>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                @foreach ([
+                    'slots' => [__('Commands at once'), 1, 50],
+                    'wait' => [__('Wait for a turn (seconds)'), 0, 300],
+                    'timeout' => [__('Time limit (seconds)'), 5, 3600],
+                ] as $field => [$label, $min, $max])
+                    <div>
+                        <x-input-label :for="'gam-'.$field" :value="$label" />
+                        <x-text-input :id="'gam-'.$field" :name="$field" type="number" inputmode="numeric" :min="$min" :max="$max" class="mt-1 block w-full" :value="old($field, $limits[$field])" required />
+                        <x-input-error :messages="$errors->get($field)" class="mt-2" />
+                    </div>
+                @endforeach
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">{{ __('A command that can\'t start in time fails with "GAM is busy". Scheduled jobs such as nightly syncs get longer.') }}</p>
+            <div class="flex justify-end"><x-secondary-button type="submit">{{ __('Save') }}</x-secondary-button></div>
         </form>
     @endif
 </x-settings-card>

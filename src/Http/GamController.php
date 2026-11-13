@@ -2,6 +2,7 @@
 
 namespace TornadoEngine\Gam\Http;
 
+use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -43,6 +44,19 @@ class GamController extends Controller
         }
 
         return back()->with('gam_status', __('Removed GAM\'s files.'));
+    }
+
+    public function limits(Request $request): RedirectResponse
+    {
+        $limits = $request->validate([
+            'slots' => ['required', 'integer', 'min:1', 'max:50'],
+            'wait' => ['required', 'integer', 'min:0', 'max:300'],
+            'timeout' => ['required', 'integer', 'min:5', 'max:3600'],
+        ]);
+
+        Setting::put('gam.limits', json_encode(array_map('intval', $limits)));
+
+        return back()->with('gam_status', __('Saved the limits.'));
     }
 
     public function check(Gam $gam): RedirectResponse

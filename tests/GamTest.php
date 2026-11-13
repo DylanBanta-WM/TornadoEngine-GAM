@@ -2,6 +2,7 @@
 
 namespace TornadoEngine\Gam\Tests;
 
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\ConnectionException;
@@ -73,6 +74,41 @@ class GamTest extends TestCase
 
         $this->assertSame(0, app(Gam::class)->run(['update', 'user', 'ann@school.test', 'org', '/Staff'])['exit']);
         Http::assertSent(fn (Request $request) => $request['args'] === ['update', 'user', 'ann@school.test', 'org', '/Staff']);
+    }
+
+    public function test_every_command_carries_the_admins_limits(): void
+    {
+        $this->gamPrints("email\nann@school.test\n");
+        Setting::put('gam.limits', json_encode(['slots' => 3, 'wait' => 5, 'timeout' => 90]));
+
+        app(Gam::class)->run(['info', 'domain']);
+        Http::assertSent(fn ($request) => $request['slots'] === 3 && $request['wait'] === 5 && $request['timeout'] === 90);
+
+        // Scheduled jobs share the same number of slots but wait and run longer.
+        app(Gam::class)->forJob()->groupMembers('teachers@school.test');
+        Http::assertSent(fn ($request) => $request['slots'] === 3 && $request['wait'] === 600 && $request['timeout'] === 1800);
+    }
+
+    public function test_a_busy_gam_is_reported(): void
+    {
+        Http::fake(['gam:8000/run' => Http::response(['error' => 'GAM is busy'], 429)]);
+
+        $this->expectExceptionMessage('GAM is busy');
+        app(Gam::class)->run(['info', 'domain']);
+    }
+
+    public function test_admins_set_the_limits(): void
+    {
+        Http::fake(['gam:8000/status' => Http::response(['configured' => true])]);
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $this->actingAs($admin)->get('/administration/gam')->assertSee('Commands at once')->assertSee('value="5"', false);
+
+        $this->actingAs($admin)->from('/administration/gam')->post('/administration/gam/limits', ['slots' => 0, 'wait' => 10, 'timeout' => 60])->assertSessionHasErrors('slots');
+        $this->actingAs($admin)->post('/administration/gam/limits', ['slots' => 2, 'wait' => 15, 'timeout' => 120]);
+        $this->assertSame(['slots' => 2, 'wait' => 15, 'timeout' => 120], Gam::limits());
+
+        $this->actingAs(User::factory()->create())->post('/administration/gam/limits', ['slots' => 50, 'wait' => 0, 'timeout' => 3600])->assertForbidden();
     }
 
     public function test_an_unreachable_sidecar_is_reported(): void

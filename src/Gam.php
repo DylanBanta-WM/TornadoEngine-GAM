@@ -2,6 +2,7 @@
 
 namespace TornadoEngine\Gam;
 
+use App\Models\Setting;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
@@ -14,7 +15,25 @@ use Illuminate\Support\Facades\Http;
  */
 class Gam
 {
+    /** Limits for scheduled jobs: they may wait their turn and run much longer. */
+    public const JOB_LIMITS = ['wait' => 600, 'timeout' => 1800];
+
+    private bool $job = false;
+
     public function __construct(private string $url, private ?string $token) {}
+
+    /**
+     * The same GAM, with the longer limits for scheduled jobs (for example nightly syncs):
+     *
+     *     app(Gam::class)->forJob()->groupMembers('teachers@example.org');
+     */
+    public function forJob(): static
+    {
+        $gam = clone $this;
+        $gam->job = true;
+
+        return $gam;
+    }
 
     /**
      * Whether GAM's credential files have been uploaded.
@@ -104,18 +123,51 @@ class Gam
         return $users;
     }
 
+    /** Defaults for the limits admins set on the GAM card. */
+    public const LIMITS = ['slots' => 5, 'wait' => 10, 'timeout' => 60];
+
+    /**
+     * The admin's limits: how many GAM commands run at once, how long a command waits for its
+     * turn (seconds), and how long a command from the website may run (seconds).
+     *
+     * @return array{slots: int, wait: int, timeout: int}
+     */
+    public static function limits(): array
+    {
+        $saved = json_decode(Setting::get('gam.limits') ?? '[]', true);
+
+        return array_map('intval', array_merge(self::LIMITS, array_intersect_key(is_array($saved) ? $saved : [], self::LIMITS)));
+    }
+
     /**
      * Runs a GAM command, given as its arguments: ['info', 'user', 'ann@example.org'].
+     *
+     * Every caller shares the admin's limit on GAM commands at once, so a runaway caller
+     * can't flood GAM or Google. A command that can't start in time throws "GAM is busy".
+     * Scheduled jobs use forJob() to wait and run longer.
      *
      * @param  list<string>  $args
      * @return array{exit: int, stdout: string, stderr: string}
      */
-    public function run(array $args): array
+    public function run(array $args, ?int $timeout = null, ?int $wait = null): array
     {
+        $limits = self::limits();
+        $timeout ??= $this->job ? self::JOB_LIMITS['timeout'] : $limits['timeout'];
+        $wait ??= $this->job ? self::JOB_LIMITS['wait'] : $limits['wait'];
+
         try {
-            $response = $this->request()->timeout(620)->post('/run', ['args' => $args]);
+            $response = $this->request()->timeout($wait + $timeout + 30)->post('/run', [
+                'args' => $args, 'slots' => $limits['slots'], 'wait' => $wait, 'timeout' => $timeout,
+            ]);
         } catch (ConnectionException $e) {
             throw new GamException(__('Can\'t reach the GAM container.'), previous: $e);
+        }
+
+        if ($response->status() === 429) {
+            throw new GamException(__('GAM is busy with other commands. Try again in a moment.'));
+        }
+        if ($response->status() === 504) {
+            throw new GamException(__('GAM took longer than :seconds seconds and was stopped.', ['seconds' => $timeout]));
         }
 
         $response->throw();
