@@ -1,0 +1,23 @@
+# The GAM sidecar, started by Tornado Engine Core (see Core's docker/modules.yml).
+services:
+  gam:
+    build: .
+    environment:
+      GAM_SIDECAR_TOKEN: ${GAM_SIDECAR_TOKEN:?Add GAM_SIDECAR_TOKEN to .env (see the GAM module README)}
+    volumes:
+      - gam-config:/gam
+    tmpfs:
+      - /tmp
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    # internal: only the website reaches it. edge: it reaches Google.
+    networks: [internal, edge]
+
+volumes:
+  gam-config:
+
+networks:
+  internal:
+    internal: true
+  edge: {}

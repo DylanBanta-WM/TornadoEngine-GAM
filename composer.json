@@ -1,0 +1,27 @@
+{
+    "name": "tornado-engine/gam",
+    "description": "Tornado Engine module: GAM for Google Workspace, in its own container, for other modules to use.",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^8.4",
+        "illuminate/support": "^13.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "TornadoEngine\\Gam\\": "src/"
+        }
+    },
+    "extra": {
+        "tornado": {
+            "name": "GAM",
+            "core": ">=0.4",
+            "core-module": false,
+            "provider": "TornadoEngine\\Gam\\GamServiceProvider",
+            "compose": "docker/compose.yml"
+        },
+        "branch-alias": {
+            "dev-main": "0.1.x-dev"
+        }
+    }
+}
