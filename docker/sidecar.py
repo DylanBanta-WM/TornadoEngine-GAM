@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """GAM sidecar for Tornado Engine.
 
-Runs GAM for the website over HTTP on the private Docker network. Only the read-only commands
-in ALLOWED can run, and every request needs the shared GAM_SIDECAR_TOKEN.
+Runs GAM for the website over HTTP on the private Docker network. Every request needs the
+shared GAM_SIDECAR_TOKEN. Commands come as a list of arguments and never go through a shell.
 
   GET  /status   {"configured": bool}
   POST /run      {"args": [...]}  ->  {"exit": int, "stdout": str, "stderr": str}
@@ -12,7 +12,6 @@ in ALLOWED can run, and every request needs the shared GAM_SIDECAR_TOKEN.
 import hmac
 import json
 import os
-import re
 import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -20,34 +19,6 @@ TOKEN = os.environ.get('GAM_SIDECAR_TOKEN', '')
 CONFIG_DIR = os.environ.get('GAMCFGDIR', '/gam')
 CONFIG_FILES = ('oauth2.txt', 'oauth2service.json', 'client_secrets.json')
 MAX_BODY = 1_000_000
-
-EMAIL = re.compile(r"^[A-Za-z0-9._%+'-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
-OU = re.compile(r'^/[^\x00-\x1f]{0,500}$')
-
-USER_FIELDS = 'primaryemail,fullname,ou,suspended'
-
-# Each entry is an exact command; "EMAIL" and "OU" stand for a checked value.
-ALLOWED = [
-    ['info', 'domain'],
-    ['print', 'orgs', 'fields', 'orgunitpath,name'],
-    ['print', 'groups', 'fields', 'email,name'],
-    ['print', 'group-members', 'group', 'EMAIL', 'recursive', 'noduplicates', 'types', 'user', 'fields', 'email'],
-    ['ou', 'OU', 'print', 'users', 'fields', USER_FIELDS],
-    ['ou_and_children', 'OU', 'print', 'users', 'fields', USER_FIELDS],
-]
-
-
-def allowed(args):
-    for pattern in ALLOWED:
-        if len(pattern) != len(args):
-            continue
-        if all(
-            (p == 'EMAIL' and EMAIL.match(a)) or (p == 'OU' and OU.match(a)) or p == a
-            for p, a in zip(pattern, args)
-        ):
-            return True
-    return False
-
 
 def configured():
     return all(os.path.isfile(os.path.join(CONFIG_DIR, name)) for name in CONFIG_FILES)
@@ -89,10 +60,11 @@ class Handler(BaseHTTPRequestHandler):
 
         if self.path == '/run':
             args = body.get('args')
-            if not isinstance(args, list) or not all(isinstance(a, str) for a in args) or not allowed(args):
-                return self.reply(403, {'error': 'command not allowed'})
+            if not isinstance(args, list) or not args or not all(isinstance(a, str) for a in args):
+                return self.reply(400, {'error': 'args must be a list of strings'})
             try:
-                done = subprocess.run(['gam', *args], capture_output=True, text=True, timeout=600)
+                # No keyboard: a command that asks a question fails instead of waiting forever.
+                done = subprocess.run(['gam', *args], capture_output=True, text=True, timeout=600, stdin=subprocess.DEVNULL)
             except subprocess.TimeoutExpired:
                 return self.reply(504, {'error': 'GAM took too long'})
             return self.reply(200, {'exit': done.returncode, 'stdout': done.stdout, 'stderr': done.stderr})

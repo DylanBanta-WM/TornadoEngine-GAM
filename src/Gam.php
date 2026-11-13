@@ -7,8 +7,8 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 /**
- * GAM for other modules. It talks to the GAM sidecar container, which only runs the read-only
- * commands it allows (see docker/sidecar.py).
+ * GAM for other modules. It talks to the GAM sidecar container, which runs any GAM command
+ * (see docker/sidecar.py).
  *
  *     app(Gam::class)->groupMembers('teachers@example.org');
  */
@@ -105,7 +105,7 @@ class Gam
     }
 
     /**
-     * Runs an allowed GAM command.
+     * Runs a GAM command, given as its arguments: ['info', 'user', 'ann@example.org'].
      *
      * @param  list<string>  $args
      * @return array{exit: int, stdout: string, stderr: string}
@@ -116,10 +116,6 @@ class Gam
             $response = $this->request()->timeout(620)->post('/run', ['args' => $args]);
         } catch (ConnectionException $e) {
             throw new GamException(__('Can\'t reach the GAM container.'), previous: $e);
-        }
-
-        if ($response->status() === 403) {
-            throw new GamException(__('The GAM container doesn\'t allow that command.'));
         }
 
         $response->throw();

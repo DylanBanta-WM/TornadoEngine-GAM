@@ -66,12 +66,20 @@ class GamTest extends TestCase
         app(Gam::class)->orgUnits();
     }
 
-    public function test_commands_the_sidecar_refuses_are_reported(): void
+    public function test_any_command_can_run(): void
     {
-        Http::fake(['gam:8000/run' => Http::response(['error' => 'command not allowed'], 403)]);
+        $this->gamPrints('done');
+
+        $this->assertSame(0, app(Gam::class)->run(['update', 'user', 'ann@school.test', 'org', '/Staff'])['exit']);
+        Http::assertSent(fn (Request $request) => $request['args'] === ['update', 'user', 'ann@school.test', 'org', '/Staff']);
+    }
+
+    public function test_an_unreachable_sidecar_is_reported(): void
+    {
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('down'));
 
         $this->expectException(GamException::class);
-        app(Gam::class)->run(['delete', 'user', 'ann@school.test']);
+        app(Gam::class)->run(['info', 'domain']);
     }
 
     public function test_admins_upload_gams_files_and_check_the_connection(): void

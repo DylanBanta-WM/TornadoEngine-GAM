@@ -2,7 +2,7 @@
 
 A [Tornado Engine](https://github.com/DylanBanta-WM/TornadoEngineCore) module: [GAM](https://github.com/GAM-team/GAM) for Google Workspace, for other modules to use.
 
-GAM runs in its own container (the GAM sidecar), which only the website can reach. The sidecar only runs the read-only commands listed in `docker/sidecar.py`.
+GAM runs in its own container (the GAM sidecar), which only the website can reach. It runs any GAM command the website sends, as a list of arguments (never through a shell).
 
 ## Setup
 
@@ -25,4 +25,4 @@ $gam->groupMembers('teachers@example.org'); // ['ann@example.org', ...]
 $gam->usersIn('/Staff');                // [['email' => ..., 'name' => ..., 'ou' => ...], ...]
 ```
 
-A command the sidecar doesn't allow throws `GamException`. To allow a new one, add it to `ALLOWED` in `docker/sidecar.py`.
+For any other command, `$gam->run(['update', 'user', 'ann@example.org', 'org', '/Staff'])` returns its exit code and output. A GAM container that can't be reached throws `GamException`.
