@@ -18,7 +18,8 @@
             "core": ">=0.6",
             "core-module": false,
             "provider": "TornadoEngine\\Gam\\GamServiceProvider",
-            "compose": "docker/compose.yml"
+            "compose": "docker/compose.yml",
+            "settings": "/administration/gam"
         },
         "branch-alias": {
             "dev-main": "0.6.x-dev"
