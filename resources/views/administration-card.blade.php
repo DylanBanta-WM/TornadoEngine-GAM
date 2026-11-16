@@ -21,7 +21,7 @@
     @endif
 
     @if (! $gamReachable)
-        <p>{!! __('The GAM container isn\'t running. Add :token to .env and run :cmd.', ['token' => '<code class="font-mono">GAM_SIDECAR_TOKEN</code>', 'cmd' => '<code class="font-mono">docker compose up -d</code>']) !!}</p>
+        <p>{!! __('The GAM container isn\'t running. Run :cmd on the server.', ['cmd' => '<code class="font-mono">docker compose up -d</code>']) !!}</p>
     @elseif ($gamConfigured)
         <p>{{ __('GAM\'s files are uploaded.') }}</p>
 

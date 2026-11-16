@@ -4,9 +4,15 @@ services:
     restart: unless-stopped
     build: .
     environment:
-      GAM_SIDECAR_TOKEN: ${GAM_SIDECAR_TOKEN:?Add GAM_SIDECAR_TOKEN to .env (see the GAM module README)}
+      # Optional: without it, the token the website made (storage/app/gam/sidecar-token) is used.
+      GAM_SIDECAR_TOKEN: ${GAM_SIDECAR_TOKEN:-}
     volumes:
       - gam-config:/gam
+      # The website's token for talking to GAM (made by this module's migration).
+      - ../../../../storage/app/gam:/tornado:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
     tmpfs:
       - /tmp
     read_only: true

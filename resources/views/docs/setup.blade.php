@@ -11,9 +11,4 @@
     <p>{!! __('If you already use GAM on a computer, the files are in its GAM folder (often :dir): :files.', ['dir' => '<code class="'.$code.'">~/.gam</code>', 'files' => '<code class="'.$code.'">oauth2.txt</code>, <code class="'.$code.'">oauth2service.json</code>, <code class="'.$code.'">client_secrets.json</code>']) !!}</p>
     <p>{!! __('If not, install GAM on a computer and follow :link. It creates the files.', ['link' => '<a href="https://github.com/GAM-team/GAM/wiki/How-to-Install-GAM7" target="_blank" rel="noopener" class="'.$link.'">'.e(__('GAM\'s install guide')).'</a>']) !!}</p>
     <p>{{ __('Then, in Administration, upload the three files on the GAM card and click Check connection.') }}</p>
-    <p>{!! __('The GAM container needs a shared password with the website. Add a line like this to .env, then run :cmd:', ['cmd' => '<code class="'.$code.'">docker compose up -d</code>']) !!}</p>
-    <x-dns.code>
-        GAM_SIDECAR_TOKEN=
-    </x-dns.code>
-    <p>{!! __('Make the value with :cmd.', ['cmd' => '<code class="'.$code.'">openssl rand -hex 32</code>']) !!}</p>
 </div>

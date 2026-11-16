@@ -10,7 +10,8 @@ class GamServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(Gam::class, fn () => new Gam('http://gam:8000', env('GAM_SIDECAR_TOKEN')));
+        $this->app->singleton(Gam::class, fn () => new Gam('http://gam:8000', Gam::sidecarToken()));
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
     }
 
     public function boot(Administration $administration): void

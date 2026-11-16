@@ -168,4 +168,20 @@ class GamTest extends TestCase
     {
         $this->actingAs(User::factory()->create())->post('/administration/gam/check')->assertForbidden();
     }
+
+    public function test_the_website_makes_the_sidecar_token_when_env_has_none(): void
+    {
+        $file = storage_path('app/gam/sidecar-token');
+        $saved = is_file($file) ? file_get_contents($file) : null;
+        @unlink($file);
+
+        try {
+            $token = Gam::sidecarToken();
+            $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $token);
+            $this->assertSame($token, Gam::sidecarToken(), 'made once, then kept');
+            $this->assertSame('0644', substr(sprintf('%o', fileperms($file)), -4));
+        } finally {
+            $saved !== null ? file_put_contents($file, $saved) : @unlink($file);
+        }
+    }
 }

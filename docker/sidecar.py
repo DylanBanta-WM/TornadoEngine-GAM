@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """GAM sidecar for Tornado Engine.
 
-Runs GAM for the website over HTTP on the private Docker network. Every request needs the
-shared GAM_SIDECAR_TOKEN. Commands come as a list of arguments and never go through a shell.
+Runs GAM for the website over HTTP on the private Docker network. Every request needs the token
+the website made (storage/app/gam/sidecar-token, mounted at /tornado), or GAM_SIDECAR_TOKEN. Commands come as a list of arguments and never go through a shell.
 
   GET  /status   {"configured": bool}
   POST /run      {"args": [...], "slots": 5, "wait": 10, "timeout": 60}
@@ -20,7 +20,18 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-TOKEN = os.environ.get('GAM_SIDECAR_TOKEN', '')
+TOKEN_FILE = '/tornado/sidecar-token'
+
+
+def token():
+    # GAM_SIDECAR_TOKEN from .env, or the one the website made (read each time: it may appear later).
+    if os.environ.get('GAM_SIDECAR_TOKEN'):
+        return os.environ['GAM_SIDECAR_TOKEN']
+    try:
+        with open(TOKEN_FILE) as handle:
+            return handle.read().strip()
+    except OSError:
+        return ''
 CONFIG_DIR = os.environ.get('GAMCFGDIR', '/gam')
 CONFIG_FILES = ('oauth2.txt', 'oauth2service.json', 'client_secrets.json')
 MAX_BODY = 1_000_000
@@ -69,7 +80,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def authorized(self):
         given = self.headers.get('Authorization', '').removeprefix('Bearer ')
-        return bool(TOKEN) and hmac.compare_digest(given, TOKEN)
+        expected = token()
+        return bool(expected) and hmac.compare_digest(given, expected)
 
     def body(self):
         length = int(self.headers.get('Content-Length') or 0)
@@ -138,6 +150,4 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    if not TOKEN:
-        raise SystemExit('GAM_SIDECAR_TOKEN is not set.')
     ThreadingHTTPServer(('0.0.0.0', 8000), Handler).serve_forever()

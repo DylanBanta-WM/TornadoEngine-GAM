@@ -23,6 +23,26 @@ class Gam
     public function __construct(private string $url, private ?string $token) {}
 
     /**
+     * The token the website and the GAM container share: GAM_SIDECAR_TOKEN from .env if it's
+     * set, otherwise storage/app/gam/sidecar-token, made the first time it's needed.
+     */
+    public static function sidecarToken(): string
+    {
+        if ($token = env('GAM_SIDECAR_TOKEN')) {
+            return $token;
+        }
+
+        $file = storage_path('app/gam/sidecar-token');
+        if (! is_file($file)) {
+            @mkdir(dirname($file), 0755, true);
+            file_put_contents($file, bin2hex(random_bytes(32)));
+            chmod($file, 0644); // the GAM container reads it as its own user
+        }
+
+        return trim((string) file_get_contents($file));
+    }
+
+    /**
      * The same GAM, with the longer limits for scheduled jobs (for example nightly syncs):
      *
      *     app(Gam::class)->forJob()->groupMembers('teachers@example.org');
@@ -222,9 +242,6 @@ class Gam
 
     private function request(): PendingRequest
     {
-        if (! $this->token) {
-            throw new GamException(__('GAM_SIDECAR_TOKEN isn\'t set in .env.'));
-        }
 
         return Http::baseUrl($this->url)->withToken($this->token)->acceptJson()->timeout(30);
     }
