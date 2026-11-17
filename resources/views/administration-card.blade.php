@@ -46,7 +46,7 @@
             @foreach (['oauth2_txt' => 'oauth2.txt', 'oauth2service_json' => 'oauth2service.json', 'client_secrets_json' => 'client_secrets.json'] as $field => $name)
                 <div>
                     <x-input-label :for="$field" :value="$name" />
-                    <input id="{{ $field }}" type="file" name="{{ $field }}" required class="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300 file:me-3 file:min-h-11 file:rounded-md file:border-0 file:bg-gray-100 dark:file:bg-gray-700 file:px-4 file:text-sm file:font-medium">
+                    <x-file-input :id="$field" :name="$field" required class="mt-1" />
                     <x-input-error :messages="$errors->get($field)" class="mt-2" />
                 </div>
             @endforeach

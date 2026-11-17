@@ -16,7 +16,7 @@
         "tornado": {
             "name": "GAM",
             "prompt": "Google Workspace: you can run GAM commands through the broker's gam tool. Modules read Google data through TornadoEngine\\Gam\\Gam when they need it, rather than keeping their own copy.",
-            "core": ">=0.20",
+            "core": ">=0.23",
             "core-module": false,
             "provider": "TornadoEngine\\Gam\\GamServiceProvider",
             "compose": "docker/compose.yml",
@@ -24,7 +24,7 @@
             "needs-setup": true
         },
         "branch-alias": {
-            "dev-main": "0.9.x-dev"
+            "dev-main": "0.10.x-dev"
         }
     }
 }
