@@ -26,11 +26,9 @@
         <p>{{ __('GAM\'s files are uploaded.') }}</p>
 
         <div class="flex flex-wrap justify-end gap-3">
-            <form method="POST" action="{{ route('gam.remove') }}"
-                  onsubmit="return confirm(@js(__('Remove GAM\'s files? Modules that use GAM stop working until you upload them again.')))">
-                @csrf
-                <x-danger-button>{{ __('Remove files') }}</x-danger-button>
-            </form>
+            <x-confirm :action="route('gam.remove')" :message="__('Remove GAM\'s files? Modules that use GAM stop working until you upload them again.')" :confirm="__('Remove files')" danger>
+                <x-slot name="trigger"><x-danger-button type="button">{{ __('Remove files') }}</x-danger-button></x-slot>
+            </x-confirm>
             <form method="POST" action="{{ route('gam.check') }}">
                 @csrf
                 <x-secondary-button type="submit">{{ __('Check connection') }}</x-secondary-button>
