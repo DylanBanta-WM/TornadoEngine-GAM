@@ -12,6 +12,11 @@ class GamServiceProvider extends ServiceProvider
     {
         $this->app->singleton(Gam::class, fn () => new Gam('http://gam:8000', Gam::sidecarToken()));
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+
+        // With the broker: what identifies people in Google (once GAM's files are uploaded).
+        $this->callAfterResolving('TornadoEngine\Broker\Broker', function ($broker) {
+            $broker->source('google', fn (array $emails) => app(Gam::class)->configured() ? app(BrokerSource::class)->values($emails) : []);
+        });
     }
 
     public function boot(Administration $administration): void
