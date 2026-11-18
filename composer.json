@@ -21,7 +21,8 @@
             "provider": "TornadoEngine\\Gam\\GamServiceProvider",
             "compose": "docker/compose.yml",
             "settings": "/administration/gam",
-            "needs-setup": true
+            "needs-setup": true,
+            "setup-done": "TornadoEngine\\Gam\\Gam@configured"
         },
         "branch-alias": {
             "dev-main": "0.10.x-dev"
