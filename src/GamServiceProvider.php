@@ -15,7 +15,7 @@ class GamServiceProvider extends ServiceProvider
 
         // With the broker: what identifies people in Google (once GAM's files are uploaded).
         $this->callAfterResolving('TornadoEngine\Broker\Broker', function ($broker) {
-            $broker->source('google', fn (array $emails) => app(Gam::class)->configured() ? app(BrokerSource::class)->values($emails) : []);
+            $broker->source('google', fn (?array $emails) => app(Gam::class)->configured() ? app(BrokerSource::class)->values($emails) : []);
         });
     }
 

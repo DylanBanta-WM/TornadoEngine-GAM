@@ -14,16 +14,16 @@ class BrokerSource
     public function __construct(private Gam $gam) {}
 
     /**
-     * @param  list<string>  $emails  the people given pseudonyms
+     * @param  list<string>|null  $emails  these people, or (null) everyone in Google
      * @return array<string, list<array{0: string, 1: string}>>
      */
-    public function values(array $emails): array
+    public function values(?array $emails): array
     {
-        $wanted = array_fill_keys(array_map('strtolower', $emails), true);
+        $wanted = $emails === null ? null : array_fill_keys(array_map('strtolower', $emails), true);
         $values = [];
         foreach ($this->users() as $user) {
             $email = strtolower((string) ($user['primaryEmail'] ?? ''));
-            if (isset($wanted[$email])) {
+            if ($email !== '' && ($wanted === null || isset($wanted[$email]))) {
                 $values[$email] = $this->identifying($user);
             }
         }
