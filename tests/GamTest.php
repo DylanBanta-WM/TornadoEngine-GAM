@@ -102,9 +102,9 @@ class GamTest extends TestCase
         Http::fake(['gam:8000/status' => Http::response(['configured' => true])]);
         $admin = User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($admin)->get('/administration/gam')->assertSee('Commands at once')->assertSee('value="5"', false);
+        $this->actingAs($admin)->get('/settings/gam')->assertSee('Commands at once')->assertSee('value="5"', false);
 
-        $this->actingAs($admin)->from('/administration/gam')->post('/administration/gam/limits', ['slots' => 0, 'wait' => 10, 'timeout' => 60])->assertSessionHasErrors('slots');
+        $this->actingAs($admin)->from('/settings/gam')->post('/administration/gam/limits', ['slots' => 0, 'wait' => 10, 'timeout' => 60])->assertSessionHasErrors('slots');
         $this->actingAs($admin)->post('/administration/gam/limits', ['slots' => 2, 'wait' => 15, 'timeout' => 120]);
         $this->assertSame(['slots' => 2, 'wait' => 15, 'timeout' => 120], Gam::limits());
 
@@ -128,18 +128,18 @@ class GamTest extends TestCase
         ]);
         $admin = User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($admin)->get('/administration/gam')->assertSee('GAM')->assertSee('oauth2service.json')->assertDontSee('Remove files');
+        $this->actingAs($admin)->get('/settings/gam')->assertSee('GAM')->assertSee('oauth2service.json')->assertDontSee('Remove files');
 
-        $this->actingAs($admin)->from('/administration')->post('/administration/gam/config', [
+        $this->actingAs($admin)->from('/settings')->post('/administration/gam/config', [
             'oauth2_txt' => UploadedFile::fake()->createWithContent('oauth2.txt', '{"token": "x"}'),
             'oauth2service_json' => UploadedFile::fake()->createWithContent('oauth2service.json', '{"type": "service_account"}'),
             'client_secrets_json' => UploadedFile::fake()->createWithContent('client_secrets.json', '{"installed": {}}'),
-        ])->assertRedirect('/administration');
+        ])->assertRedirect('/settings');
 
         Http::assertSent(fn (Request $request) => $request->url() === 'http://gam:8000/config'
             && $request['files']['oauth2service.json'] === '{"type": "service_account"}');
 
-        $this->actingAs($admin)->from('/administration')->post('/administration/gam/check')
+        $this->actingAs($admin)->from('/settings')->post('/administration/gam/check')
             ->assertSessionHas('gam_status', 'GAM can reach your Google Workspace.')
             ->assertSessionHas('gam_ok', true);
     }
@@ -150,9 +150,9 @@ class GamTest extends TestCase
         Http::fake(['gam:8000/config/remove' => Http::response(['configured' => false])]);
         $admin = User::factory()->create(['is_admin' => true]);
 
-        $this->actingAs($admin)->get('/administration/gam')->assertSee('Remove files')->assertDontSee('oauth2service.json');
+        $this->actingAs($admin)->get('/settings/gam')->assertSee('Remove files')->assertDontSee('oauth2service.json');
 
-        $this->actingAs($admin)->from('/administration')->post('/administration/gam/remove')->assertRedirect('/administration');
+        $this->actingAs($admin)->from('/settings')->post('/administration/gam/remove')->assertRedirect('/settings');
         Http::assertSent(fn (Request $request) => $request->url() === 'http://gam:8000/config/remove');
     }
 
@@ -160,7 +160,7 @@ class GamTest extends TestCase
     {
         $this->gamPrints('', exit: 1);
 
-        $this->actingAs(User::factory()->create(['is_admin' => true]))->from('/administration')->post('/administration/gam/check')
+        $this->actingAs(User::factory()->create(['is_admin' => true]))->from('/settings')->post('/administration/gam/check')
             ->assertSessionHasErrors('gam');
     }
 
